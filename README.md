@@ -1,15 +1,12 @@
-# Python Checkers (Pygame GUI + Minimax + Opening Book via draughts.js)
+# Python Checkers (PyGame GUI + Minimax + Opening Book via OCA)
 
-This is the **Option A** pipeline: we keep the Python engine/UI and generate a JSON opening book offline using **draughts.js**.
+This project implements English checkers (draughts) with a Python engine and a Pygame graphical interface.
 
-## What’s inside
-- **Pygame GUI**
-- **Minimax + alpha–beta**, 3 difficulties, TT in Hard
-- **15+ heuristics**
-- **Opening book** loader (`checkers/core/opening_book.py`) that reads `book.json` (generated from PDN by Node tool)
-- **Node tool** `tools/pdn_to_book.mjs` to convert PDN → JSON FEN transitions
-- **FEN support** in `CheckersState` (`to_fen` / `from_fen`)
-- **Version control helpers**: `.gitignore`, `scripts/setup_git.sh`, and an optional GitHub Actions lint job
+The game features AI using minimax with alpha-beta pruning, multiple difficulty levels, and an opening book for move selection.
+
+The opening book is generated offline from PDN files using a Python script and loaded in Python for improved AI play. 
+
+The game supports FEN notation for board states and includes various helpers for version control and setup.
 
 ## Quick Start
 ```bash
@@ -21,15 +18,22 @@ python -m checkers.main
 
 ## Build an opening book (PDN → JSON)
 ```bash
-# 1) Install Node deps for the converter
-cd tools
-npm init -y
-npm i draughts
-# 2) Convert PDN (first 10 plies) into book.json used by Python
-node pdn_to_book.mjs ../data/your_games.pdn ../checkers/core/book.json --plies=10
+# 1) Create data directory
+mkdir data
+
+# 2) Download PDN files into data directory
+from https://www.fierz.ch/OCA_2.0.zip
+
+# 3) execute the python script to generate the book
+
+python -m tools.pdn_to_book data/*.pdn checkers/book/book.json --plies 8
 ```
 
-> The book format is **FEN_current → [FEN_next, ...]**. Python maps legal moves by applying them and checking if the resulting FEN is in the set.
+**Notes:**
+
+- Replace `../data/your_games.pdn` with the actual path to your PDN file.
+- `--plies=x` means we store the first 10 half-moves; adjust as you wish.
+
 
 ## Run
 ```bash
@@ -39,3 +43,6 @@ python -m checkers.main
 ## Notes
 - Make sure your PDN is **English checkers (8×8)** compatible.
 - If you change rules/variant, regenerate the book with matching PDN.
+
+
+
