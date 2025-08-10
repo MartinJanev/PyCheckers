@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+
+# Node tool
+tools/node_modules/
+tools/package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Book data
+tools/book.json
+data/
+tests/
+pytest.ini

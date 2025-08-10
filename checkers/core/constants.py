@@ -1,0 +1,9 @@
+BLACK, WHITE = 'b', 'w'
+BLACK_K, WHITE_K = 'B', 'W'
+EMPTY = '.'
+
+DIRS_WHITE = [(1, -1), (1, 1)]
+DIRS_BLACK = [(-1, -1), (-1, 1)]
+DIRS_KING = DIRS_WHITE + DIRS_BLACK
+
+BOARD_SIZE = 8
