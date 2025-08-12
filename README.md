@@ -48,7 +48,7 @@ pycheckers/
 │   ├── core/                   #  rules/AI/heuristics/PDN
 │   │   ├── constants.py        # game constants
 │   │   ├── engine.py           # game engine
-│   │   ├── heuristics.py       #  heuristics for AI
+│   │   ├── heuristics.py       # heuristics for AI
 │   │   ├── move.py             # move logic
 │   │   ├── opening_book.py     # AI opening book
 │   │   ├── pdn.py              # PDN parsing and handling
