@@ -46,21 +46,23 @@ pip install -r requirements.txt # to install dependencies
 pycheckers/
 ├── checkers/
 │   ├── core/                   #  rules/AI/heuristics/PDN
-│   │   ├── constants.py        # game constants
 │   │   ├── engine.py           # game engine
 │   │   ├── heuristics.py       # heuristics for AI
 │   │   ├── move.py             # move logic
-│   │   ├── opening_book.py     # AI opening book
-│   │   ├── pdn.py              # PDN parsing and handling
-│   │   ├── state.py            # game state management
-│   │   └── util.py             # utility functions
+│   │   └── state.py            # game state management
+│   ├── tools/
+│   │   ├── pdn_to_book.py          # tool to convert PDN files to opening book JSON - you can use this to build your own book
+│   │   └── book.json
 │   ├── gui/                    
 │   │   ├── pygame_app.py
 │   │   └── icon.jpg
+│   ├── util/
+│   │   ├── constants.py        # game constants
+│   │   ├── opening_book.py     # AI opening book
+│   │   ├── pdn.py              # PDN parsing and handling
+│   │   ├── rules.py            # game rules
+│   │   └── utls.py             # utility functions
 │   └── main.py
-├── tools/
-│   ├── pdn_to_book.py          # tool to convert PDN files to opening book JSON - you can use this to build your own book
-│   └── book.json
 ├── requirements.txt            # (your existing)
 ├── .gitignore
 └── README.md

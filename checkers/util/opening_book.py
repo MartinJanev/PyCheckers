@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json, os
-from .state import CheckersState
-from .move import Move
+from checkers.core.state import CheckersState
+from checkers.core.move import Move
 
 BOOK_FILE = os.path.join(os.path.dirname(__file__), "book.json")
 

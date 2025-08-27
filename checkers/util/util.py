@@ -1,4 +1,4 @@
-from .constants import BOARD_SIZE
+from checkers.util.constants import BOARD_SIZE
 
 def idx_to_coord(r: int, c: int) -> str:
     return f"{chr(ord('a') + c)}{BOARD_SIZE - r}"

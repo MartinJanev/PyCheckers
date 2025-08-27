@@ -1,4 +1,4 @@
-from .gui.pygame_app import PygameUI
+from .gui.gui_app import PygameUI
 
 
 def main():

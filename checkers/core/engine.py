@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, List, Dict, TypedDict, Tuple
+from typing import Optional, List, Dict, TypedDict, Tuple, Callable, Any
 import math, random
 from .state import CheckersState
 from .move import Move
@@ -20,8 +20,12 @@ class EngineConfig(TypedDict, total=False):
     # NEW: algo selector
     algo: str  # "random" | "minimax" | "expectimax"
     depth: int
-    heuristic: str
+    heuristic: Any  # str | Heuristic | Callable[[CheckersState], float]
     use_tt: bool
+
+
+# Sampling size for opponent moves in expectimax (white nodes)
+EXPECTIMAX_SAMPLE_K = 6
 
 
 def order_moves(state: CheckersState, moves: List[Move]) -> List[Move]:
@@ -37,8 +41,19 @@ def order_moves(state: CheckersState, moves: List[Move]) -> List[Move]:
     return sorted(moves, key=lambda m: (not m.is_capture, -len(m.path)))
 
 
-def evaluate_with(state: CheckersState, h: Heuristic) -> float:
+def _eval_h(h: Any, state: CheckersState) -> float:
+    """Evaluate heuristic `h` on `state`, supporting either string keys,
+    Heuristic objects, or plain callables."""
+    if isinstance(h, str):
+        hh = HEURISTICS.get(h, HEURISTICS["material"])
+        return hh.evaluate(state) if hasattr(hh, "evaluate") else hh(state)
+    if hasattr(h, "evaluate") and callable(getattr(h, "evaluate")):
+        return h.evaluate(state)
     return h(state)
+
+
+def evaluate_with(state: CheckersState, h) -> float:
+    return _eval_h(h, state)
 
 
 def zobrist_hash(state: CheckersState) -> int:
@@ -62,8 +77,9 @@ def zobrist_hash(state: CheckersState) -> int:
 
 
 # ---------------- Minimax (with optional TT) ----------------
+
 def alphabeta(state: CheckersState, depth: int, alpha: float, beta: float,
-              h: Heuristic, tt: Dict[int, TTEntry] | None) -> Tuple[float, Optional[Move]]:
+              h, tt: Dict[int, TTEntry] | None) -> Tuple[float, Optional[Move]]:
     """
     Perform the Alpha-Beta pruning algorithm on the CheckersState.
     This function recursively explores the game tree to find the best move for the current player
@@ -72,7 +88,7 @@ def alphabeta(state: CheckersState, depth: int, alpha: float, beta: float,
     :param depth: int, the maximum depth to search in the game tree
     :param alpha: float, the best score that the maximizer currently can guarantee at that level or above
     :param beta: float, the best score that the minimizer currently can guarantee at that level or above
-    :param h: Heuristic, the heuristic function to evaluate the state
+    :param h: Heuristic (or callable), the heuristic function to evaluate the state
     :param tt: Dict[int, TTEntry] | None, optional transposition table for caching results
     :return: Tuple[float, Optional[Move]] -> a tuple containing the best score for the current player
              and the best move to achieve that score
@@ -95,8 +111,22 @@ def alphabeta(state: CheckersState, depth: int, alpha: float, beta: float,
             if flag == UPPER: beta = min(beta, val)
             if alpha >= beta: return val, mv
 
+    # Prefer TT move first for better cutoffs
+    tt_move = None
+    if tt is not None and key in tt:
+        try:
+            tt_move = tt[key]["move"]
+        except Exception:
+            tt_move = None
     best_move: Optional[Move] = None
     moves = order_moves(state, state.legal_moves())
+    if tt_move is not None:
+        try:
+            idx = moves.index(tt_move)
+            if idx != 0:
+                moves[0], moves[idx] = moves[idx], moves[0]
+        except ValueError:
+            pass
     if not moves:
         # no legal moves means the game is terminal and would have been caught above,
         # but guard anyway
@@ -124,17 +154,18 @@ def alphabeta(state: CheckersState, depth: int, alpha: float, beta: float,
         return min_eval, best_move
 
 
-# ---------------- Expectimax (uniform opponent) ----------------
-def expectimax(state: CheckersState, depth: int, h: Heuristic) -> Tuple[float, Optional[Move]]:
+# ---------------- Expectimax (sampled opponent) ----------------
+
+def expectimax(state: CheckersState, depth: int, h) -> Tuple[float, Optional[Move]]:
     """
     Perform the Expectimax algorithm on the CheckersState.
     This function recursively explores the game tree to find the best move for the current player
-    while treating the opponent as a uniform random player.
+    while treating the opponent as a uniform random player, sampled for efficiency.
     It evaluates the expected value of moves for the opponent (White) and chooses the best move
     for the maximizing player (Black).
     :param state: CheckersState to evaluate, which includes the board and turn
     :param depth: Integer, the maximum depth to search in the game tree
-    :param h: Heuristic, the heuristic function to evaluate the state
+    :param h: Heuristic (or callable) to evaluate the state
     :return: Tuple[float, Optional[Move]] -> a tuple containing the best expected score for the current player
              and the best move to achieve that score
     """
@@ -157,15 +188,35 @@ def expectimax(state: CheckersState, depth: int, h: Heuristic) -> Tuple[float, O
             val, _ = expectimax(state.apply_move(m), depth - 1, h)
             if val > best_val: best_val, best_move = val, m
         return best_val, best_move
-    else:  # Expectation over White moves (uniform random model)
+    else:  # Expectation over White moves (sampled model)
+        k = EXPECTIMAX_SAMPLE_K
+        ordered = order_moves(state, moves)
+        caps = [m for m in ordered if m.is_capture]
+        if len(ordered) <= k:
+            sample = ordered
+        elif caps:
+            sample = caps[:k]
+            if len(sample) < k:
+                rest = [m for m in ordered if not m.is_capture]
+                random.shuffle(rest)
+                sample += rest[:(k - len(sample))]
+        else:
+            sample = random.sample(ordered, k)
         vals = []
-        for m in moves:
+        for m in sample:
             val, _ = expectimax(state.apply_move(m), depth - 1, h)
             vals.append(val)
         return (sum(vals) / len(vals), None)
 
 
 # ---------------- Top-level chooser ----------------
+
+def _cfg_get(cfg, key, default=None):
+    if isinstance(cfg, dict):
+        return cfg.get(key, default)
+    return getattr(cfg, key, default)
+
+
 def choose_ai_move(state: CheckersState, config: EngineConfig) -> Move:
     """
     Choose the best move for the AI based on the given CheckersState and configuration.
@@ -174,11 +225,12 @@ def choose_ai_move(state: CheckersState, config: EngineConfig) -> Move:
     It also handles the case where no legal moves are available.
     :param state: CheckersState to evaluate, which includes the board and turn
     :param config: EngineConfig, configuration for the AI engine, including algorithm choice,
-                   depth, heuristic, and whether to use a transposition table
+                   depth, heuristic (string or callable), and whether to use a transposition table
     :return: Move -> the best move for the AI to make based on the current state and configuration
     """
-    algo = config.get("algo", "minimax")
-    h = HEURISTICS.get(config.get("heuristic", "material"), HEURISTICS["material"])
+    algo = _cfg_get(config, "algo", "minimax")
+    heur_spec = _cfg_get(config, "heuristic", "material")
+    h = heur_spec  # may be str, Heuristic, or callable
 
     # Beginner: pick a random legal move
     if algo == "random":
@@ -189,7 +241,7 @@ def choose_ai_move(state: CheckersState, config: EngineConfig) -> Move:
 
     # Expectimax tier
     if algo == "expectimax":
-        val, mv = expectimax(state, int(config.get("depth", 3)), h)
+        val, mv = expectimax(state, int(_cfg_get(config, "depth", 3)), h)
         if mv is None:
             legal = state.legal_moves()
             if not legal:
@@ -198,8 +250,8 @@ def choose_ai_move(state: CheckersState, config: EngineConfig) -> Move:
         return mv
 
     # Default: minimax + optional TT
-    tt = {} if config.get("use_tt", False) else None
-    val, mv = alphabeta(state, int(config.get("depth", 5)), -math.inf, math.inf, h, tt)
+    tt = {} if _cfg_get(config, "use_tt", False) else None
+    val, mv = alphabeta(state, int(_cfg_get(config, "depth", 5)), -math.inf, math.inf, h, tt)
     if mv is None:
         legal = state.legal_moves()
         if not legal:

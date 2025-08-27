@@ -6,19 +6,19 @@ dist/
 build/
 
 # Node tool
-tools/node_modules/
-tools/package-lock.json
+checkers/tools/node_modules/
+checkers/tools/package-lock.json
 
 # OS
 .DS_Store
 Thumbs.db
 
 # Book data
-tools/book.json
+checkers/tools/book.json
 data/
 stats/
 tests/
 checkers/analysis/
 pytest.ini
-checkers/history_collector.py
-checkers/terminal_input.txt
+checkers/analysis/history_collector.py
+checkers/analysis/terminal_input.txt

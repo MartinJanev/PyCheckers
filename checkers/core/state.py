@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import List, Tuple, Optional
-from .constants import BLACK, WHITE, BLACK_K, WHITE_K, EMPTY, DIRS_BLACK, DIRS_WHITE, DIRS_KING, BOARD_SIZE
+from typing import List, Optional
+from checkers.util.constants import BLACK, WHITE, BLACK_K, WHITE_K, EMPTY, DIRS_BLACK, DIRS_WHITE, DIRS_KING, BOARD_SIZE
 from .move import Move, MoveSeq, Coord
-from .util import in_bounds
+from checkers.util.util import in_bounds
 
 class CheckersState:
     def __init__(self, board: Optional[List[List[str]]] = None, turn: str = BLACK):
