@@ -30,7 +30,6 @@ BOARD_MARGIN_X = 40
 BOARD_MARGIN_Y = 40
 BOARD_SIDEBAR_GAP = 40
 
-# ⬇️ make the sidebar wider so long “Moves:” lines have more room
 SIDEBAR_W = 520
 SIDEBAR_PAD = 14
 
@@ -52,10 +51,25 @@ BORDER = (210, 210, 210)
 
 
 def rc_to_xy(r: int, c: int) -> Tuple[int, int]:
+    """
+    Convert board row/column to pixel x/y coordinates (top-left of square)
+    :param r: Value of row
+    :param c: Value of column
+    :return: (x, y) pixel coordinates
+    """
     return BOARD_MARGIN_X + c * TILE, BOARD_MARGIN_Y + r * TILE
 
 
 def pos_to_rc(x: int, y: int) -> Tuple[int, int]:
+    """
+    Convert pixel x/y coordinates to board row/column
+    0,0 is top-left of board; returns (-1,-1) if outside board area
+    0 <= r,c < BOARD_SIZE if on board
+    0 <= x < W, 0 <= y < H
+    :param x: Value of x
+    :param y: Value of y
+    :return: (r, c) board coordinates
+    """
     x -= BOARD_MARGIN_X
     y -= BOARD_MARGIN_Y
     if x < 0 or y < 0:
@@ -64,6 +78,20 @@ def pos_to_rc(x: int, y: int) -> Tuple[int, int]:
 
 
 def wrap_text(text: str, font: pygame.font.Font, max_width: int) -> list[str]:
+    """
+    Simple word-wrap that breaks text into multiple lines to fit within max_width
+    0-width space characters are treated as normal spaces
+    1. Splits text into words by whitespace
+    2. Iteratively adds words to the current line until adding another word would exceed max
+    3. Starts a new line when the current line is full
+    4. Returns a list of lines
+    5. If a single word is longer than max_width, it will be placed on its own line (may overflow)
+    6. Does not hyphenate or split words
+    :param text: Input text to wrap
+    :param font: Font used to measure text width
+    :param max_width: Maximum width in pixels
+    :return: List of lines
+    """
     words = text.split()
     lines, cur = [], ""
     for w in words:
@@ -92,6 +120,14 @@ ALIASES = {"Easy": "Beginner", "Medium": "Pro", "Hard": "Hard"}
 
 
 def _clone_state(s: CheckersState) -> CheckersState:
+    """
+    Clone a CheckersState object safely.
+    Uses .copy() or .clone() if available; otherwise falls back to deepcopy.
+    0. Check if the object has a 'copy' method and use it if available
+    1. If not, check for a 'clone' method and use it if available
+    :param s: CheckersState to clone
+    :return: Cloned CheckersState
+    """
     if hasattr(s, "copy"):
         return s.copy()
     if hasattr(s, "clone"):
@@ -155,6 +191,18 @@ class PygameUI:
     # -------------------- Main loop --------------------
 
     def run(self):
+        """
+        Main application loop.
+        Handles events, updates game state, and renders the UI.
+        1. Show side selection screen
+        2. If human plays Black, let AI make the first move automatically
+        3. Main loop:
+           - Handle events (mouse clicks, key presses)
+           - If it's AI's turn, compute and apply AI move with animation
+              - Draw the current game state
+        4. On exit, save the game to a PDN file and quit pygame
+        :return:
+        """
         self.show_side_selection()
 
         self.message = (
@@ -194,6 +242,13 @@ class PygameUI:
     # -------------------- Side selection screen --------------------
 
     def show_side_selection(self):
+        """
+        Show a simple side selection screen where the user can choose to play as White or Black.
+        1. Display two buttons: "Play White" and "Play Black"
+        2. Wait for the user to click one of the buttons
+        3. Set self.human_color based on the selection
+        :return:
+        """
         import sys as _sys
         clock = pygame.time.Clock()
         font_title = pygame.font.SysFont(None, 48)
@@ -247,6 +302,19 @@ class PygameUI:
     # -------------------- Events --------------------
 
     def handle_events(self):
+        """
+        Handle pygame events: mouse clicks, key presses, window close.
+        1. Process all pending pygame events
+        2. Handle quitting the application
+        3. Handle key presses for difficulty selection and undo/redo
+        4. Handle mouse clicks for board interaction and sidebar buttons
+        5. If it's not the human's turn, ignore board clicks
+        6. Convert mouse position to board coordinates and handle piece selection/movement
+        7. Update self.selected, self.message, and apply moves as needed
+        8. No mouse wheel handling needed now that the Games panel is gone
+        9. Return early if a new game is started to avoid processing further events
+        :return:
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -301,12 +369,31 @@ class PygameUI:
     # -------------------- Game ops --------------------
 
     def set_difficulty(self, name: str):
+        """
+        Set the AI difficulty level.
+        1. Check if the provided name is a valid difficulty level
+        2. If valid, update self.diff_name and self.config
+        :param name: Difficulty level name
+        :return:
+        """
         if name in DIFFICULTIES:
             self.diff_name = name
             self.config = DIFFICULTIES[name]
             self.message = f"Difficulty set to {name}."
 
     def on_click(self, r: int, c: int):
+        """
+        Handle a click on the board at row r, column c.
+        1. If no piece is selected, select the clicked piece if it's the human's color
+        2. If a piece is already selected, check if the clicked square is a valid move target
+        3. If valid, apply the move with animation and update the game state
+        4. If invalid, show an error message
+        5. If clicking on another piece of the human's color, change the selection
+        6. Clear selection after a move is made
+        :param r:
+        :param c:
+        :return:
+        """
         if not (0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE):
             return
         p = self.state.board[r][c]
@@ -336,6 +423,14 @@ class PygameUI:
         self.apply_and_refresh(mv)
 
     def find_matching_move(self, path: list[tuple[int, int]]) -> Optional[Move]:
+        """
+        Find a legal move that matches the given path.
+        1. Check if any legal move exactly matches the provided path
+        2. If no exact match, check for moves that start with the provided path
+        3. If exactly one move starts with the path, return that move
+        :param path:
+        :return:
+        """
         for m in self.legal:
             if m.path == path:
                 return m
@@ -345,6 +440,18 @@ class PygameUI:
         return None
 
     def apply_and_refresh(self, mv: Move):
+        """
+        Apply a move to the game state and refresh legal moves and history.
+        1. Save the current state to the undo stack and clear the redo stack
+        2. Apply the move to the current state
+        3. Update the list of legal moves
+        4. Append the move to the history
+        5. Clear the selected piece
+        6. Update draw rules and check for draw conditions
+        7. If a draw condition is met, set the game result and stop the game
+        :param mv:
+        :return:
+        """
         self.undo_stack.append(_clone_state(self.state))
         self.redo_stack.clear()
 
@@ -361,7 +468,13 @@ class PygameUI:
             return
 
     def _show_loading_overlay(self, text: str = "Loading...", duration_ms: int = 800):
-        """Non-flashy loading overlay: dimmed backdrop + gentle dot spinner at 30 FPS."""
+        """
+        Non-flashy loading overlay: dimmed backdrop + gentle dot spinner at 30 FPS.
+        1. Draw the current game state and save it as a background
+        2. For the specified duration, display a semi-transparent overlay with a card
+        3. On the card, show the provided text and a dot spinner animation
+        4. Allow quitting during the overlay
+        """
         # Draw once and reuse as background to avoid flicker
         self.draw()
         bg = self.screen.copy()
@@ -419,7 +532,13 @@ class PygameUI:
             self.clock.tick(30)  # gentle frame rate
 
     def _reset_to_new_game(self):
-        """Clear history/stacks and start from the initial position."""
+        """
+        Reset the game state to start a new game.
+        1. Reset the game state, legal moves, and draw rules
+        2. Clear the UI state: history, undo/redo stacks, selection, and message
+        3. If the human plays Black, let the AI make the first move automatically
+        :return:
+        """
         # reset board
         self.state = CheckersState()
         self.legal = self.state.legal_moves()
@@ -440,6 +559,11 @@ class PygameUI:
             self.apply_and_refresh(mv)
 
     def _rebuild_rules_from_history(self):
+        """
+        Rebuild the draw rules tracker from the current move history.
+        This is needed after undo/redo operations to keep the draw rule counters and repetition map consistent.
+        :return:
+        """
         # Recreate the draw-rule tracker from scratch and replay the move history
         self.rules = DrawRulesTracker(DrawRulesConfig(
             no_capture_plies_threshold=80,  # 40 full moves = 80 plies
@@ -452,6 +576,15 @@ class PygameUI:
             self.rules.on_move(s, m)
 
     def undo(self, plies: int = 1):
+        """
+        Undo the last 'plies' moves.
+        1. For the specified number of plies, pop states from the undo stack and push them onto the redo stack
+        2. Update the current state, legal moves, and history accordingly
+        3. Rebuild the draw rules tracker from the updated history
+        4. Update the message to indicate how many plies were undone
+        :param plies:
+        :return:
+        """
         for _ in range(plies):
             if not self.undo_stack:
                 break
@@ -469,6 +602,15 @@ class PygameUI:
         self.message = f"Undid {plies} ply." if plies == 1 else f"Undid {plies} plies."
 
     def redo(self, plies: int = 1):
+        """
+        Redo the last 'plies' undone moves.
+        1. For the specified number of plies, pop states from the redo stack and push them onto the undo stack
+        2. Update the current state, legal moves, and history accordingly
+        3. Rebuild the draw rules tracker from the updated history
+        4. Update the message to indicate how many plies were redone
+        :param plies:
+        :return:
+        """
         for _ in range(plies):
             if not self.redo_stack:
                 break
@@ -486,6 +628,20 @@ class PygameUI:
     # -------------------- Animation --------------------
 
     def animate_move(self, mv: Move, duration: float = 0.25):
+        """
+        Animate a move by smoothly moving the piece along its path.
+        1. Check if the move has a valid path with at least two squares
+        2. For each segment of the path, interpolate the piece's position over the specified duration
+        3. During the animation, redraw the board and pieces without the moving piece
+        4. Draw the moving piece on top at its interpolated position
+        5. Use a high frame rate for smooth animation
+        6. The moving piece is drawn as a filled circle with an outline; kings have an additional inner circle
+        7. The board is redrawn each frame to reflect the current state
+        ...
+        :param mv: Move to animate
+        :param duration: Total duration of the animation in seconds
+        :return:
+        """
         if not mv.path or len(mv.path) < 2:
             return
 
@@ -530,6 +686,11 @@ class PygameUI:
     # -------------------- Rendering --------------------
 
     def draw(self, base_only: bool = False):
+        """
+        Draw the entire UI: board, pieces, sidebar, highlights, animations.
+        :param base_only: If True, only draw the board and pieces (no highlights or animations)
+        :return:
+        """
         self.screen.fill((30, 30, 30))
 
         # Board
@@ -673,6 +834,17 @@ class PygameUI:
         pygame.display.flip()
 
     def save_pdn(self, filename=None):
+        """
+        Save the current game to a PDN file.
+        1. If there is no move history, do nothing
+        2. Determine the game result, using self.game_result if valid, otherwise compute from state
+        3. Set player names based on human color
+        4. Call save_game_pdn to write the PDN file in the data/games directory
+        5. Update the message to indicate the game was saved
+        6. If filename is None, a timestamped filename will be generated
+        :param filename: Optional filename for the PDN file
+        :return:
+        """
         if not self.history:
             return
         result = self.game_result if self.game_result in {"1-0", "0-1", "1/2-1/2"} else self.compute_result_from_state()
@@ -689,6 +861,15 @@ class PygameUI:
         self.message = f"Game saved."
 
     def compute_result_from_state(self) -> str:
+        """
+        Compute the game result from the current state.
+        1. Check if the game is over using self.state.terminal()
+        2. Return "1-0" if White wins, "0-1"
+        if Black wins, "1/2-1/2" if it is a draw, or "*" if the game is ongoing
+        3. This is a fallback if self.game_result is not already set
+        4. Note: This does not handle all draw conditions (e.g., 40-move rule)
+        :return:
+        """
         winner = self.state.terminal()  # 'w', 'b', 'draw' or None
         if winner == 'w':
             return "1-0"

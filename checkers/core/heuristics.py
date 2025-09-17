@@ -8,6 +8,15 @@ Heuristic = Callable[[CheckersState], float]
 
 # ---- Lightweight per-state move cache (used only during evaluation) ----
 def _get_move_cache(state: CheckersState) -> dict:
+    """
+    Get or create a per-state cache dictionary for storing computed values.
+    This cache is used to avoid redundant calculations during heuristic evaluations.
+    The cache is stored as an attribute on the state object. If the state object
+    is slotted or frozen and cannot have new attributes set, a temporary dictionary
+    is used instead (which will not persist across calls).
+    :param state: CheckersState object to attach the cache to
+    :return: dict: A dictionary for caching computed values
+    """
     cache = getattr(state, "_heval_cache", None)
     if cache is None:
         cache = {}
@@ -19,7 +28,12 @@ def _get_move_cache(state: CheckersState) -> dict:
     return cache
 
 def _cached_legal_moves(state: CheckersState, side: str):
-    """Return legal moves for a given side, caching on the state object."""
+    """
+    Return legal moves for a given side, caching on the state object.
+    :param state: CheckersState to evaluate
+    :param side: 'b' or 'w' for which side to get moves
+    :return: list of Move objects representing legal moves for the specified side
+    """
     cache = _get_move_cache(state)
     key = ('moves', side)
     if key in cache:
@@ -102,6 +116,7 @@ def h_material_advancement(state: CheckersState) -> float:
 def h_mobility(state: CheckersState) -> float:
     """
     Mobility: cached move counts per side.
+
     """
     turn = state.turn
     b_moves = len(_cached_legal_moves(state, 'b'))
@@ -333,6 +348,13 @@ def h_piece_clustering(state: CheckersState) -> float:
 
 
 def h_opponent_mobility_restriction(state: CheckersState) -> float:
+    """
+    Heuristic to slightly favor positions that limit opponent's mobility.
+    Uses cached move lists.
+    0.04 per move difference.
+    :param state: CheckersState to evaluate
+    :return:
+    """
     turn = state.turn
     opp = 'w' if turn == 'b' else 'b'
     state.turn = opp
@@ -342,7 +364,13 @@ def h_opponent_mobility_restriction(state: CheckersState) -> float:
 
 
 def h_exchange_favorability(state: CheckersState) -> float:
-    # Rough estimate: if we have more captures available than opponent, favor it
+    """
+    Heuristic to slightly favor positions that have more capturing moves available.
+    Uses cached move lists.
+    0.1 per capture move difference.
+    :param state: CheckersState to evaluate
+    :return:
+    """
     turn = state.turn
     state.turn = 'b'
     b_caps = sum(m.is_capture for m in state.legal_moves())
@@ -354,6 +382,16 @@ def h_exchange_favorability(state: CheckersState) -> float:
 
 
 def h_king_advancement_pressure(state: CheckersState) -> float:
+    """
+    Heuristic to slightly favor positions where kings are advancing towards opponent's back rank.
+    0.02 per row advanced.
+    7 rows max for a king.
+    0.14 max per king.
+    0.28 max total if 2 kings.
+    0 if no kings.
+    :param state: CheckersState to evaluate
+    :return:
+    """
     s = 0.0
     for r in range(BOARD_SIZE):
         for c in range(BOARD_SIZE):

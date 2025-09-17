@@ -23,10 +23,22 @@ def parse_args():
     return ap.parse_args()
 
 def split_games(pdn_text: str):
+    """
+    Split PDN text into game blocks starting with [Event "..."]
+    Each block may contain multiple lines of headers and move text.
+    Empty blocks are skipped.
+    :param pdn_text: full PDN text
+    :return:
+    """
     parts = re.split(r'(?=\[Event\s*")', pdn_text.replace("\r\n", "\n"))
     return [p.strip() for p in parts if p.strip()]
 
-def extract_movetext(block: str) -> str:
+def extract_move_text(block: str) -> str:
+    """
+    Extract move text from a PDN block, stripping headers, comments, and variations.
+    :param block: PDN game block
+    :return: move text as a single string
+    """
     # strip headers
     lines = [ln for ln in block.splitlines() if not HEADER_RE.match(ln)]
     text = " ".join(lines)
@@ -37,6 +49,16 @@ def extract_movetext(block: str) -> str:
     return " ".join(text.split())
 
 def scan_move_tokens(movetext: str):
+    """
+    Scan move text for tokens like "12-16" or "22x17x10".
+    Ignore move numbers, results, and anything not matching the expected pattern.
+    1. Split by whitespace.
+    2. Ignore tokens ending with '.' (move numbers).
+    3. Stop at result tokens like "1-0", "0-1", "1/2-1/2", "*".
+    4. Keep tokens matching the pattern of moves.
+    :param movetext: move text string
+    :return:
+    """
     toks = []
     for frag in movetext.split():
         if frag.endswith("."):  # "1."
@@ -49,6 +71,15 @@ def scan_move_tokens(movetext: str):
 
 # ----- Two English 1..32 mappings -----
 def n_to_rc_v1(n: int) -> tuple[int,int]:
+    """
+    Convert square number (1..32) to (row,col) on 8x8 board.
+    Dark squares are on (r+c)%2 == 1; row 0 has dark columns 1,3,5,7.
+    1->(0,1), 2->(0,3), 3->(0,5), 4->(0,7)
+    5->(1,0), 6->(1,2), 7->(1,4), 8->(1,6)
+    ...
+    :param n: square number 1..32
+    :return:
+    """
     """Dark squares on (r+c)%2 == 1; row0 dark columns 1,3,5,7."""
     n -= 1
     r = n // 4
@@ -57,7 +88,17 @@ def n_to_rc_v1(n: int) -> tuple[int,int]:
     return r, c
 
 def n_to_rc_v2(n: int) -> tuple[int,int]:
-    """Dark squares on (r+c)%2 == 0; row0 dark columns 0,2,4,6."""
+    """
+    Convert square number (1..32) to (row,col) on 8x8 board.
+    Dark squares are on (r+c)%2 == 1; row 0 has dark
+    columns 0,2,4,6.
+    1->(0,0), 2->(0,2), 3
+    ->(0,4), 4->(0,6)
+    5->(1,1), 6->(1,3), 7
+    ...
+    :param n: square number 1..32
+    :return:
+    """
     n -= 1
     r = n // 4
     k = n % 4
@@ -65,11 +106,21 @@ def n_to_rc_v2(n: int) -> tuple[int,int]:
     return r, c
 
 def token_to_path(token: str, mapper) -> list[tuple[int,int]]:
+    """
+    Convert a move token like "12-16" or "22x17x10" to a list of (row,col) tuples.
+    :param token: move token string
+    :param mapper: function to convert square number to (row,col)
+    :return: list of (row,col) tuples
+    """
     return [mapper(int(x)) for x in re.split(r'[-x]', token)]
 
 # ----- Two start orientations -----
 def start_state_black_top() -> CheckersState:
-    """Black pieces 1-12 on top (rows 0..2), White bottom, Black to move."""
+    """
+    Black pieces 1-12 on top (rows 0..2), White bottom, Black to move.
+    This is the opposite of CheckersState() default.
+    :return:
+    """
     s = CheckersState()
     # swap colors from your engine's default if needed
     for r in range(8):
@@ -89,6 +140,25 @@ def start_state_white_top() -> CheckersState:
     return s
 
 def find_matching_move(state: CheckersState, path, is_capture: bool, guess_ok: bool) -> Move | None:
+    """
+    Find a legal move in the current state matching the given path and capture flag.
+    If multiple captures match the start and end squares, and guess_ok is True,
+    return the longest path (most jumps).
+    Otherwise, return None if no exact match is found.
+    1. Exact match: is_capture and path must match exactly.
+    2. For captures, if no exact match, match start and end squares; if multiple,
+       return the longest if guess_ok.
+    3. For non-captures, only exact matches of two-square paths are considered.
+    4. Return None if no match is found.
+    5. This function does not modify the state.
+    6. The caller should handle the case where no match is found.
+    7. This function assumes the state is valid and has legal moves.
+    :param state: current CheckersState
+    :param path: list of (row,col) tuples representing the move path
+    :param is_capture: whether the move is a capture
+    :param guess_ok: whether to guess among multiple captures
+    :return: matching Move or None
+    """
     legal = state.legal_moves()
 
     # exact path
@@ -154,8 +224,8 @@ def main():
     ok = skipped = added = 0
 
     for block in blocks:
-        movetext = extract_movetext(block)
-        tokens = scan_move_tokens(movetext)
+        move_text = extract_move_text(block)
+        tokens = scan_move_tokens(move_text)
         if not tokens:
             skipped += 1
             if args.debug: print("Skip: no tokens")

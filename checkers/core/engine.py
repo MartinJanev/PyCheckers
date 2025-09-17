@@ -53,6 +53,14 @@ def _eval_h(h: Any, state: CheckersState) -> float:
 
 
 def evaluate_with(state: CheckersState, h) -> float:
+    """
+    Evaluate the given CheckersState using the provided heuristic function or specification.
+    The heuristic can be specified as a string (key in HEURISTICS), a Heuristic object,
+    or any callable that takes a CheckersState and returns a float score.
+    :param state: CheckersState to evaluate, which includes the board and turn
+    :param h: Heuristic (or callable) to evaluate the state
+    :return: float score of the state from the perspective of the side to move
+    """
     return _eval_h(h, state)
 
 

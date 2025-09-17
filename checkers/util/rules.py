@@ -12,6 +12,7 @@ class DrawRulesConfig:
     # Forty-move rule is traditionally 40 *full moves* without a capture.
     # We count in plies (half-moves), so default threshold is 80 plies.
     no_capture_plies_threshold: int = 80
+
     # Threefold repetition threshold (position incl. side-to-move)
     repetition_threshold: int = 3
 

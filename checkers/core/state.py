@@ -70,6 +70,11 @@ class CheckersState:
         return captures if captures else quiets
 
     def _quiets_from(self, rc: Coord) -> list[Move]:
+        """
+        Generate non-capturing moves from a given piece location.
+        :param rc: (row, col) of the piece
+        :return: list of Move objects
+        """
         r, c = rc
         p = self.piece_at(rc)
         dirs = DIRS_KING if self.is_king(p) else self.directions_for(p)
@@ -199,19 +204,3 @@ class CheckersState:
         side = self.turn  # 'b' or 'w'
         return "/".join(rows) + " " + side
 
-    @staticmethod
-    def from_fen(fen: str) -> 'CheckersState':
-        board_part, side = fen.strip().split()
-        rows = board_part.split('/')
-        board = []
-        for r in range(8):
-            row = []
-            for ch in rows[r]:
-                if ch.isdigit():
-                    row.extend(['.'] * int(ch))
-                else:
-                    row.append(ch)
-            while len(row) < 8:
-                row.append('.')
-            board.append(row[:8])
-        return CheckersState(board=board, turn=side)

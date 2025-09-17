@@ -5,6 +5,12 @@ MoveSeq = list[Coord]
 
 @dataclass(frozen=True)
 class Move:
+    """
+    Represents a move in a checkers game.
+    Attributes:
+        path (MoveSeq): A sequence of coordinates representing the move path.
+        is_capture (bool): Indicates if the move is a capturing move.
+    """
     path: MoveSeq
     is_capture: bool
 
