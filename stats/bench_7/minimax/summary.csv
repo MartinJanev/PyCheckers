@@ -1,0 +1,8 @@
+heuristic,games,wins,losses,draws,win_pct,avg_plies,avg_time_s
+opp_mobility_restrict,111,61,30,20,55.0,47.0,52.297
+material,120,60,60,0,50.0,39.0,20.076
+material_adv,120,60,60,0,50.0,37.2,27.607
+mobility,111,50,51,10,45.0,49.3,58.827
+back_rank,120,50,60,10,41.7,41.1,29.329
+connectivity,120,50,60,10,41.7,40.3,47.615
+king_adv_pressure,120,50,60,10,41.7,50.0,26.467

@@ -15,10 +15,6 @@ Thumbs.db
 
 # Book data
 checkers/tools/book.json
-data/
-stats/
+data/games
 tests/
-checkers/analysis/
-pytest.ini
-checkers/analysis/history_collector.py
-checkers/analysis/terminal_input.txt
+stats/T*/

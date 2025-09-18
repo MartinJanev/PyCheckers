@@ -1,0 +1,8 @@
+,back_rank,connectivity,king_adv_pressure,material,material_adv,mobility,opp_mobility_restrict
+back_rank,0,10,10,10,10,10,0
+connectivity,10,0,10,10,10,10,0
+king_adv_pressure,10,10,0,10,10,0,10
+material,10,10,10,0,10,10,10
+material_adv,10,10,10,10,0,10,10
+mobility,10,10,10,10,10,0,0
+opp_mobility_restrict,10,10,10,10,10,11,0

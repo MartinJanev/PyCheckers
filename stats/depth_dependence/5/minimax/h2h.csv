@@ -1,0 +1,16 @@
+,attack_bias,back_rank,center,clustering,connectivity,double_corner,exchange_favorability,king_adv_pressure,material,material_adv,mobility,mobility_safe,opp_mobility_restrict,piece_square,promotion_potential
+attack_bias,0,4,6,4,5,4,4,4,4,4,6,5,0,6,5
+back_rank,4,0,0,4,5,4,4,0,4,4,6,4,0,5,5
+center,6,6,0,5,6,6,5,0,0,5,9,7,0,0,7
+clustering,4,4,0,0,4,3,3,4,3,3,6,4,0,5,5
+connectivity,5,5,0,4,0,4,4,5,4,4,7,6,0,6,6
+double_corner,4,4,0,3,4,0,3,4,3,0,6,5,0,5,5
+exchange_favorability,4,4,5,3,4,3,0,4,3,3,6,5,0,5,5
+king_adv_pressure,4,4,0,4,5,4,4,0,4,0,6,4,0,5,5
+material,4,4,5,3,4,3,3,4,0,3,6,4,0,5,5
+material_adv,4,4,5,3,4,3,3,4,3,0,6,4,4,5,5
+mobility,6,6,0,6,7,6,6,6,6,6,0,6,0,7,7
+mobility_safe,0,4,0,4,0,0,0,4,4,4,6,0,0,5,5
+opp_mobility_restrict,4,4,6,4,5,0,4,0,4,4,7,5,0,6,0
+piece_square,6,5,0,5,6,5,5,5,5,5,7,5,0,0,6
+promotion_potential,5,5,7,5,6,5,5,5,5,5,0,5,0,6,0

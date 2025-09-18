@@ -1,0 +1,16 @@
+heuristic,games,wins,losses,draws,win_pct,avg_plies,avg_time_s
+double_corner,97,45,27,25,46.4,80.0,17.138
+opp_mobility_restrict,91,42,15,34,46.2,93.8,25.584
+exchange_favorability,100,40,28,32,40.0,91.3,42.797
+attack_bias,114,45,33,36,39.5,91.1,56.826
+back_rank,102,38,33,31,37.3,84.4,29.776
+material,156,55,31,70,35.3,102.1,49.773
+king_adv_pressure,104,34,22,48,32.7,109.5,63.483
+clustering,102,33,24,45,32.4,100.9,31.454
+material_adv,100,27,27,46,27.0,102.4,60.646
+promotion_potential,128,30,37,61,23.4,105.4,40.240
+mobility_safe,104,22,25,57,21.2,117.0,173.725
+piece_square,134,24,18,92,17.9,132.2,72.860
+connectivity,123,19,43,61,15.4,107.4,37.790
+center,137,0,52,85,0.0,125.8,18.869
+mobility,148,0,39,109,0.0,145.2,132.804
